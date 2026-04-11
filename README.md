@@ -1,4 +1,4 @@
-# LLMReplay
+# llmreplay
 
 Deterministic replay layer for LLM-driven systems.
 
