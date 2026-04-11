@@ -1,4 +1,3 @@
-````md
 # LLMReplay
 
 Deterministic replay layer for LLM-driven systems.
@@ -42,7 +41,7 @@ It enables you to:
 
 ## Features
 
-- Request / response capture layer  
+- Request/response capture layer  
 - Deterministic replay engine  
 - Tool-call mocking support  
 - Snapshot-based testing workflow  
