@@ -1,2 +1,0 @@
-[console_scripts]
-llmreplay = llmreplay.cli:cli
