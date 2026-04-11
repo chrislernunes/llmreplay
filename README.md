@@ -18,7 +18,7 @@ for event in session.events():
 
 ---
 
-## Pupose
+## 🤔 Why
 
 LLM agents fail non-deterministically. When something breaks in production you typically can't reproduce it — different seeds, different API responses, different tool outputs. You end up re-running and praying it breaks the same way.
 
@@ -28,13 +28,15 @@ Your agent burned $400 at 3am → you type one command → you see the exact pro
 
 ---
 
-## Install
+## 📦 Install
 
 ```bash
 pip install llmreplay                   # core only
 pip install "llmreplay[openai]"         # + OpenAI auto-instrumentation
 pip install "llmreplay[anthropic]"      # + Anthropic auto-instrumentation
 pip install "llmreplay[langchain]"      # + LangChain / LangGraph / CrewAI
+pip install "llmreplay[grok]"           # + xAI Grok (OpenAI-compatible)
+pip install "llmreplay[gemini]"         # + Google Gemini
 pip install "llmreplay[web]"            # + Streamlit timeline UI
 pip install "llmreplay[all]"            # everything
 ```
@@ -43,7 +45,7 @@ pip install "llmreplay[all]"            # everything
 
 ---
 
-## Quickstart
+## 🚀 Quickstart
 
 ### Record & replay (OpenAI)
 
@@ -86,7 +88,49 @@ session = replay("anthropic_run")
 print(f"Cost: ${session.total_cost():.4f}")
 ```
 
-### Tool mocking
+### Record & replay (Grok / xAI)
+
+```python
+import os, openai
+from llmreplay import record, replay
+
+# xAI is OpenAI-compatible — just point base_url at x.ai
+client = openai.OpenAI(
+    api_key=os.environ["XAI_API_KEY"],
+    base_url="https://api.x.ai/v1",
+)
+
+with record("grok_run", seed=42):
+    response = client.chat.completions.create(
+        model="grok-3",
+        messages=[{"role": "user", "content": "What is the meaning of life?"}],
+    )
+
+session = replay("grok_run")
+print(f"Cost: ${session.total_cost():.4f}")
+```
+
+### Record & replay (Gemini)
+
+```python
+import os
+import google.genai as genai
+from llmreplay import record, replay
+
+client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
+
+with record("gemini_run", seed=42):
+    response = client.models.generate_content(
+        model="gemini-2.5-pro",
+        contents="Explain quantum entanglement.",
+    )
+    print(response.text)
+
+session = replay("gemini_run")
+print(f"Cost: ${session.total_cost():.4f}")
+```
+
+### 🔧 Tool mocking
 
 ```python
 from llmreplay import record_tool, ToolMocker
@@ -113,7 +157,7 @@ price = fetch_price("RELIANCE")   # returns recorded {"price": 2850.50}
 mocker.assert_exhausted("fetch_price")
 ```
 
-### LangChain / CrewAI
+### 🔗 LangChain / CrewAI
 
 ```python
 from llmreplay import record, langchain_handler
@@ -127,7 +171,7 @@ with record("lc_run"):
     result = chain.run("Summarise the RBI policy")
 ```
 
-### Regression testing
+### 🧪 Regression testing
 
 ```python
 from llmreplay import RegressionSuite
@@ -146,7 +190,7 @@ results = suite.run()
 suite.print_report(results)
 ```
 
-### Fork — counterfactual debugging
+### ✂️ Fork — counterfactual debugging
 
 ```python
 from llmreplay import fork
@@ -155,7 +199,7 @@ from llmreplay import fork
 new_store = fork("broken_run", "fixed_run", at_step=50)
 ```
 
-### Fine-tuning export
+### 📤 Fine-tuning export
 
 ```python
 from llmreplay import export_finetune_dataset
@@ -202,7 +246,7 @@ llmreplay delete my_run_0423
 
 ---
 
-## Web Timeline UI
+## 🖥️ Web Timeline UI
 
 ```bash
 pip install "llmreplay[web]"
@@ -213,7 +257,7 @@ Features: cost heatmap per LLM call · filterable event timeline · exception hi
 
 ---
 
-## What gets recorded
+## 📋 What gets recorded
 
 | Event | What's captured |
 |---|---|
@@ -229,7 +273,7 @@ Features: cost heatmap per LLM call · filterable event timeline · exception hi
 
 ---
 
-## Storage
+## 🗄️ Storage
 
 Runs live in `~/.llmreplay/` as SQLite databases, one per run.
 
@@ -248,7 +292,7 @@ Override with `LLMREPLAY_DIR=/your/path` env var or `base_dir=Path(...)` argumen
 
 ---
 
-## Determinism guarantee
+## 🔒 Determinism guarantee
 
 ```
 Record once → replay N times → bitwise identical event log every time.
@@ -269,6 +313,8 @@ Enforced by:
 |---|---|---|
 | OpenAI (v1+) | ✅ | Patches `Completions.create` / `AsyncCompletions.create` |
 | Anthropic (v0.20+) | ✅ | Patches `Messages.create` / `AsyncMessages.create` |
+| Grok / xAI | ✅ | OpenAI-compatible — detected via `base_url` |
+| Gemini (google-generativeai) | ✅ | Patches `GenerativeModel.generate_content` |
 | LangChain / LangGraph | ✅ | Callback handler, zero monkey-patching |
 | CrewAI | ✅ | Via LangChain callbacks |
 | LlamaIndex | 🔜 | Planned |
@@ -288,7 +334,7 @@ Enforced by:
 
 ---
 
-## Development
+## 🛠️ Development
 
 ```bash
 git clone https://github.com/your-org/llmreplay
