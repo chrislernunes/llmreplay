@@ -18,7 +18,7 @@ for event in session.events():
 
 ---
 
-## 🤔 Why
+## Pupose
 
 LLM agents fail non-deterministically. When something breaks in production you typically can't reproduce it — different seeds, different API responses, different tool outputs. You end up re-running and praying it breaks the same way.
 
@@ -28,7 +28,7 @@ Your agent burned $400 at 3am → you type one command → you see the exact pro
 
 ---
 
-## 📦 Install
+## Install
 
 ```bash
 pip install llmreplay                   # core only
@@ -43,7 +43,7 @@ pip install "llmreplay[all]"            # everything
 
 ---
 
-## 🚀 Quickstart
+## Quickstart
 
 ### Record & replay (OpenAI)
 
@@ -86,7 +86,7 @@ session = replay("anthropic_run")
 print(f"Cost: ${session.total_cost():.4f}")
 ```
 
-### 🔧 Tool mocking
+### Tool mocking
 
 ```python
 from llmreplay import record_tool, ToolMocker
@@ -113,7 +113,7 @@ price = fetch_price("RELIANCE")   # returns recorded {"price": 2850.50}
 mocker.assert_exhausted("fetch_price")
 ```
 
-### 🔗 LangChain / CrewAI
+### LangChain / CrewAI
 
 ```python
 from llmreplay import record, langchain_handler
@@ -127,7 +127,7 @@ with record("lc_run"):
     result = chain.run("Summarise the RBI policy")
 ```
 
-### 🧪 Regression testing
+### Regression testing
 
 ```python
 from llmreplay import RegressionSuite
@@ -146,7 +146,7 @@ results = suite.run()
 suite.print_report(results)
 ```
 
-### ✂️ Fork — counterfactual debugging
+### Fork — counterfactual debugging
 
 ```python
 from llmreplay import fork
@@ -155,7 +155,7 @@ from llmreplay import fork
 new_store = fork("broken_run", "fixed_run", at_step=50)
 ```
 
-### 📤 Fine-tuning export
+### Fine-tuning export
 
 ```python
 from llmreplay import export_finetune_dataset
@@ -202,7 +202,7 @@ llmreplay delete my_run_0423
 
 ---
 
-## 🖥️ Web Timeline UI
+## Web Timeline UI
 
 ```bash
 pip install "llmreplay[web]"
@@ -213,7 +213,7 @@ Features: cost heatmap per LLM call · filterable event timeline · exception hi
 
 ---
 
-## 📋 What gets recorded
+## What gets recorded
 
 | Event | What's captured |
 |---|---|
@@ -229,7 +229,7 @@ Features: cost heatmap per LLM call · filterable event timeline · exception hi
 
 ---
 
-## 🗄️ Storage
+## Storage
 
 Runs live in `~/.llmreplay/` as SQLite databases, one per run.
 
@@ -248,7 +248,7 @@ Override with `LLMREPLAY_DIR=/your/path` env var or `base_dir=Path(...)` argumen
 
 ---
 
-## 🔒 Determinism guarantee
+## Determinism guarantee
 
 ```
 Record once → replay N times → bitwise identical event log every time.
@@ -288,7 +288,7 @@ Enforced by:
 
 ---
 
-## 🛠️ Development
+## Development
 
 ```bash
 git clone https://github.com/your-org/llmreplay
