@@ -1,147 +1,91 @@
 # llmreplay
 
-Deterministic replay layer for LLM-driven systems.
+Deterministic replay debugger for LLM agents. Records LLM calls and tool executions to SQLite, replays from the log with no network calls.
 
----
+```python
+from llmreplay import record, replay
 
-## Overview
+# Record
+with record("my_run", seed=42):
+    response = client.chat.completions.create(...)
 
-LLMReplay is a lightweight framework for capturing, replaying, and testing LLM interactions.
+# Replay — zero network calls
+session = replay("my_run")
+for event in session.events():
+    print(event.step, event.kind, event.payload)
+```
 
-It converts non-deterministic LLM behavior into reproducible system behavior, enabling reliable debugging and testing.
-
----
-
-## Problem
-
-LLM applications are difficult to test because they are:
-
-- Non-deterministic by design  
-- Dependent on external APIs  
-- Hard to reproduce across runs  
-- Fragile in CI environments  
-- Difficult to debug historically  
-
-This leads to unreliable regression testing and unstable evaluation pipelines.
-
----
-
-## Solution
-
-LLMReplay introduces a replay abstraction layer for LLM systems.
-
-It enables you to:
-
-- Capture real LLM executions
-- Store structured interaction traces
-- Replay executions deterministically
-- Remove dependency on live model calls during tests
-
----
-
-## Features
-
-- Request/response capture layer  
-- Deterministic replay engine  
-- Tool-call mocking support  
-- Snapshot-based testing workflow  
-- CI-safe execution mode  
-- Minimal integration overhead  
-
----
-
-## Architecture
-
-LLMReplay operates in two primary modes:
-
-### Record Mode
-
-Captures live execution traces from your LLM application, including:
-
-- Inputs
-- Outputs
-- Tool calls (if applicable)
-- Execution metadata
-
-These traces are persisted for later reuse.
-
----
-
-### Replay Mode
-
-Replays stored traces without invoking external LLM APIs.
-
-This ensures:
-
-- Deterministic outputs
-- Fast execution
-- No network dependency
-- Stable CI behavior
-
----
-
-## Core Workflow
-
-1. Run your application in **record mode**
-2. Generate and store interaction traces
-3. Run the same application in **replay mode**
-4. Validate outputs against recorded snapshots
-
----
-
-## Use Cases
-
-- LLM application testing  
-- Agent workflow debugging  
-- Prompt regression testing  
-- Evaluation pipelines  
-- CI/CD validation for LLM systems  
-- Tool-using agent simulation  
-
----
-
-## Installation
+## Install
 
 ```bash
 pip install llmreplay
-````
-
----
-
-## Quick Start
-
-```python
-from llmreplay import ReplayClient
-
-client = ReplayClient()
-
-# Record mode
-client.record()
-run_your_llm_app()
-
-# Replay mode
-client.replay()
-run_your_llm_app()
 ```
 
----
+Requirements: Python >= 3.10
 
-## Design Principle
+## What gets recorded
 
-> If it cannot be replayed, it cannot be tested.
+- LLM requests/responses (OpenAI, Anthropic, Grok/xAI, Gemini)
+- Tool calls/results (via `@record_tool` decorator)
+- Random seeds (Python `random`, numpy)
+- Exceptions
 
----
+Events are stored in `~/.llmreplay/<run_id>.db`.
 
-## Roadmap
+## CLI
 
-* Structured trace DAG visualization
-* Multi-model replay support
-* Latency and stochasticity simulation layer
-* Distributed trace collection
-* Web-based replay inspector
-* Plugin system for tool mocking
+```bash
+llmreplay list                    # List recorded runs
+llmreplay view my_run             # Show all events
+llmreplay view my_run --step 42   # Jump to step
+llmreplay cost my_run             # Cost breakdown
+llmreplay export my_run --json    # Export bug report
+llmreplay web my_run              # Launch timeline UI
+```
 
----
+## Features
+
+**Auto-instrumentation** — OpenAI, Anthropic, Grok, Gemini, LangChain hooks install automatically within `record()` context.
+
+**Tool mocking** — Record tool I/O with `@record_tool`, replay with `ToolMocker`:
+
+```python
+from llmreplay import ToolMocker, EventStore
+
+mocker = ToolMocker()
+mocker.load(EventStore("my_run"))
+
+@mocker.mock(name="fetch_price")
+def fetch_price(ticker: str) -> dict: ...  # returns recorded result
+```
+
+**Regression testing** — Run recorded traces against updated code:
+
+```python
+from llmreplay import RegressionSuite
+
+suite = RegressionSuite()
+
+@suite.case("run_001")
+def check(original, session):
+    return session.total_cost() <= original["total_cost_usd"] * 1.1
+
+suite.run()
+```
+
+**Fork/branch** — Copy a trace up to a step for counterfactual debugging:
+
+```python
+from llmreplay import fork
+new_store = fork("broken_run", "fixed_run", at_step=50)
+```
+
+**Fine-tuning export** — Export prompt/response pairs:
+
+```python
+from llmreplay import export_finetune_dataset
+export_finetune_dataset(["run_001", "run_002"], "data.jsonl")
+```
 
 ## License
 
