@@ -1,47 +1,92 @@
-[build-system]
-requires = ["setuptools>=68", "wheel"]
-build-backend = "setuptools.build_meta"
+# llmreplay
 
-[project]
-name = "llmreplay"
-version = "0.1.2"
-description = "Deterministic replay debugger for LLM agents"
-readme = "README.md"
-license = "MIT"
-requires-python = ">=3.10"
-dependencies = [
-    "click>=8.1",
-    "rich>=13.0",
-    "aiofiles>=23.0",
-]
+Deterministic replay debugger for LLM agents. Records LLM calls and tool executions to SQLite, replays from the log with no network calls.
 
-[project.optional-dependencies]
-openai    = ["openai>=1.0"]
-anthropic = ["anthropic>=0.20"]
-langchain = ["langchain>=0.2", "langchain-core>=0.2"]
-grok      = ["openai>=1.0"]
-gemini    = ["google-genai>=0.8"]
-s3        = ["boto3>=1.28"]
-web       = ["streamlit>=1.35", "plotly>=5.0"]
-dev       = ["pytest>=8.0", "pytest-asyncio>=0.23", "pytest-cov>=5.0"]
-all       = ["llmreplay[openai,anthropic,langchain,grok,gemini,s3,web,dev]"]
+```python
+from llmreplay import record, replay
 
-[project.scripts]
-llmreplay = "llmreplay.cli:cli"
+# Record
+with record("my_run", seed=42):
+    response = client.chat.completions.create(...)
 
-[tool.setuptools.packages.find]
-where   = ["."]
-include = ["llmreplay*"]
+# Replay — zero network calls
+session = replay("my_run")
+for event in session.events():
+    print(event.step, event.kind, event.payload)
+```
 
-[tool.pytest.ini_options]
-asyncio_mode = "auto"
-testpaths    = ["tests"]
+## Install
 
-[tool.coverage.run]
-omit = ["llmreplay/web.py"]
+```bash
+pip install llmreplay
+```
 
-[tool.coverage.report]
-exclude_lines = [
-    "pragma: no cover",
-    "if __name__ == .__main__.:",
-]
+Requirements: Python >= 3.10
+
+## What gets recorded
+
+- LLM requests/responses (OpenAI, Anthropic, Grok/xAI, Gemini)
+- Tool calls/results (via `@record_tool` decorator)
+- Random seeds (Python `random`, numpy)
+- Exceptions
+
+Events are stored in `~/.llmreplay/<run_id>.db`.
+
+## CLI
+
+```bash
+llmreplay list                    # List recorded runs
+llmreplay view my_run             # Show all events
+llmreplay view my_run --step 42   # Jump to step
+llmreplay cost my_run             # Cost breakdown
+llmreplay export my_run --json    # Export bug report
+llmreplay web my_run              # Launch timeline UI
+```
+
+## Features
+
+**Auto-instrumentation** — OpenAI, Anthropic, Grok, Gemini, LangChain hooks install automatically within `record()` context.
+
+**Tool mocking** — Record tool I/O with `@record_tool`, replay with `ToolMocker`:
+
+```python
+from llmreplay import ToolMocker, EventStore
+
+mocker = ToolMocker()
+mocker.load(EventStore("my_run"))
+
+@mocker.mock(name="fetch_price")
+def fetch_price(ticker: str) -> dict: ...  # returns recorded result
+```
+
+**Regression testing** — Run recorded traces against updated code:
+
+```python
+from llmreplay import RegressionSuite
+
+suite = RegressionSuite()
+
+@suite.case("run_001")
+def check(original, session):
+    return session.total_cost() <= original["total_cost_usd"] * 1.1
+
+suite.run()
+```
+
+**Fork/branch** — Copy a trace up to a step for counterfactual debugging:
+
+```python
+from llmreplay import fork
+new_store = fork("broken_run", "fixed_run", at_step=50)
+```
+
+**Fine-tuning export** — Export prompt/response pairs:
+
+```python
+from llmreplay import export_finetune_dataset
+export_finetune_dataset(["run_001", "run_002"], "data.jsonl")
+```
+
+## License
+
+MIT
